@@ -30,6 +30,7 @@
 
 class welRaspiFed extends WP_Widget {
 
+	// Widget Informationen
     function welRaspiFed() {
 		
 		$widget_ops = array(
@@ -45,14 +46,20 @@ class welRaspiFed extends WP_Widget {
 		);
     }
     
+	// Ausgabe des Widgets auf der Blog Seite
     function widget($args, $instance) {
 		
+		// SimplePie Bibliothek laden 
 		require_once (ABSPATH . WPINC . '/class-feed.php');
 		
+		
         extract($args);
+		
+		// Benutzer variablen laden
 		extract($instance);
 		
-		$title   = "RaspiFeed.de";
+		// Raspifeed variablen
+		$title   = "Raspifeed.de";
 		$url     = "http://raspifeed.de/";
 		$rss_url = "feed://raspifeed.de/feed";
 		
@@ -62,6 +69,7 @@ class welRaspiFed extends WP_Widget {
 		// Plugin URL
 		$plugin_url = WP_PLUGIN_URL . "/" . $plugin_dir;
 		
+		// Neues Feed Objekt laden
 		$feed = new SimplePie();
 		$feed->set_feed_url($rss_url);
 		$feed->init();
@@ -70,38 +78,54 @@ class welRaspiFed extends WP_Widget {
         $feed->set_file_class('WP_SimplePie_File');
         $feed->set_cache_duration(apply_filters('wp_feed_cache_transient_lifetime', $cachetime));
 
-
+		// Feed Fehler an Wordpress Error übergeben 
         if ( $feed->error() )
             return new WP_Error('simplepie-error', $feed->error());
 		
 		
+		// Feed Ausgabe als Liste einleiten 
 		$feedHTML = "<ul>\n";
 		
+		// Bei einem Fehler nicht das Feed Objekt auswerten 
 		if(is_wp_error($feed)) {
 			
 			$feedHTML .= "<li>Error reading feed</li>";
 		}
+		// Feed Objekt auswerten 
 		else {
 		
+			// Für alle Feedeinträge im Objekt
 			foreach ($feed->get_items(0, $max_items) as $item) {
 	
+				// Url der Seite des Feeds, wird für Favicon benötigt
 				$item_url = parse_url($item->get_permalink());
 				
+				// Datum des Feedeintrags (Hier wird ein flasches Datum übergeben)
 				$feedTimestamp   = strtotime($item->get_date());
 				$feedDate        = date_i18n($date_format, $feedTimestamp);
+				
+				// Favicon des Eintrags laden
 				$feedFavicon     = "http://g.etfv.co/http://" . $item_url['host'];
+				
+				// Link zum Eintrag ermitteln
 				$feedLink        = $item->get_permalink();
+				
+				// Einleitung des Eintrags ermitteln und die ersten 200 Zeichen im Link-Titel ausgeben 
 				$feedDescription = str_replace(array("\n", "\r"), ' ', esc_attr(strip_tags(@html_entity_decode($item->get_description(), ENT_QUOTES, get_option('blog_charset')))));;
 				$feedDescription = wp_html_excerpt($feedDescription, 200) . '&hellip; ';
 				$feedDescription = esc_html($feedDescription);
+				
+				// Titel des Eintrags ermitteln
 				$feedTitle       = $item->get_title();
 				
-				$feedAuthorInfo  = $item->get_author();
+				// Autor des Eintrags ermitteln
 				// wird als Email und nicht als Name intepretiert
+				$feedAuthorInfo  = $item->get_author();
 				$feedAuthor      = $feedAuthorInfo->email;
 				if(strlen($feedAuthor) > 25)
 					$feedAuthor  = wp_html_excerpt($feedAuthor, 22) . '&hellip; ';
 			
+				// Feed Eintrag formatieren
 				$feedHTML .= "<li  class=\"welRaspiFeed-feeditem\" ";
 				$feedHTML .= $show_icon ? "style=\"list-style-type: none;\"><img src=\"$feedFavicon\" width=\"16\" height=\"16\" class=\"welRaspiFeed-feedicon\" />" : ">";
 				$feedHTML .= "<span class=\"welRaspiFeed-feedname\">";
@@ -109,30 +133,35 @@ class welRaspiFed extends WP_Widget {
 				$feedHTML .= "<div class=\"welRaspiFeed-author\">";
 				$feedHTML .= "<cite>$feedAuthor</cite> - <span>$feedDate</span>";
 				$feedHTML .= "</div>";
-				$feedHTML .= "</li>\n";
 			}
+
+			$feedHTML .= "</li>\n";
+			$feedHTML .= "<li class=\"welRaspiFeed-feeditem\" style=\"list-style-type: none;\">";
+	     	$feedHTML .= "<a href=\"$url\" target=\"_blank\">...mehr auf <img src=\"$plugin_url/images/raspifeed-$logo_color.png\" height=\"14\" width=\"99\" style=\"float:none; margin-bottom:-2px;\" /></a>";		
+			$feedHTML .= "</li>\n";
+
 		}
 		
-		$feedHTML .= "<li class=\"welRaspiFeed-feeditem\" style=\"list-style-type: none;\">";
-     	$feedHTML .= "<a href=\"$url\" target=\"_blank\">...mehr auf <img src=\"$plugin_url/images/raspifeed-$logo_color.png\" height=\"14\" width=\"99\" style=\"float:none; margin-bottom:-2px;\" /></a>";		
-		$feedHTML .= "</li>\n";
+
 		$feedHTML .= "</ul>\n";
+		
+		// Link zur GitHub wo das Plugin geladen werden kann
 		$feedHTML .= "<div style=\"text-align: right; line-height:10px; margin-top: -10px;\">";
 		$feedHTML .= "<a href=\"http://welzels.de/\" target=\"_blank\"><img src=\"http://g.etfv.co/http://welzels.de\" width=\"8\" height=\"8\" border=\"0\"></a> ";
 		$feedHTML .= "<a href=\"https://github.com/Illuminux/welRaspiFeed\" title=\"Get this Plugin on GitHub\" target=\"_blank\"><img src=\"$plugin_url/images/GitHub-$logo_color.png\" width=\"8\" height=\"8\" border=\"0\"></a>";
 		$feedHTML .= "</div>\n";
 
         
-        // output
+        // Ausgabe des Widgets auf der Seite
         echo $before_widget;
-        if($title)
-            echo $before_title.$title.$after_title;
+		echo $before_title.$title.$after_title;
         echo $feedHTML;
         echo $after_widget;
     
     }
 
 
+	// Akualisierung der Benutzervariablen des Widgets 
 	function update($new_instance, $old_instance) {
 		
 		$instance = $old_instance;
@@ -147,6 +176,7 @@ class welRaspiFed extends WP_Widget {
     }
 	
   
+  	// Administrations Menü des Widgets anzeigen 
 	function form($instance) {
 		
 		// Plugin Verzeichnis
@@ -155,20 +185,24 @@ class welRaspiFed extends WP_Widget {
 		// Plugin URL
 		$plugin_url = WP_PLUGIN_URL . "/" . $plugin_dir;
 		
+		// Voreinstellungen der Benutzervariablen
 		$instance = wp_parse_args((array)$instance, array(
-			'max_items'   => 5, 
-			'cachetime'   => 6000, 
-			'show_icon'   => 1,
-			'date_format' => "j. M Y",
-			'logo_color'  => "black"
+			'max_items'   => 5,				// Anzahl der Einträge
+			'cachetime'   => 6000, 			// Dauer bis Feed erneut abgerufen wird
+			'show_icon'   => 1,				// Feed Icons anzeigen 
+			'date_format' => "j. M. Y",		// Formatierung des Datums
+			'logo_color'  => "black"		// Schwarzes Raspifeed Logo verwenden 
 		));
         
+		// Benutzervariablen ermitteln
 		$max_items   = intval($instance['max_items']);
 		$cachetime   = intval($instance['cachetime']);
 		$show_icon   = intval($instance['show_icon']);
 		$date_format = $instance['date_format'];
 		$logo_color  = $instance['logo_color'];
-  
+		
+		
+		// Administrationsformular der Widget Einstellungen 
         echo '
 			<p>
 			  <label for="'.$this->get_field_name('max_items').'">Maximum Items: </label>
@@ -197,13 +231,17 @@ class welRaspiFed extends WP_Widget {
     }
 }
 
+
+// Funktion zur Widget Registrierung
 function welRaspiFed_init() {
 	
 	register_widget('welRaspiFed');
 }
 
-
+// Aktion zur Widget Registrierung aufrufen 
 add_action('widgets_init', 'welRaspiFed_init');
+
+// Style-Sheet Informationen in den HTML-Kopf einfügen
 add_action('wp_head', 'welRaspiFed_style', 8);
 
 	
